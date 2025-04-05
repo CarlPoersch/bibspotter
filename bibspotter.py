@@ -87,30 +87,41 @@ with st.sidebar:
         st.session_state.user_reservierung = None
         st.rerun()
 
-# Sidebar mit Navigation über Seiten (via URL-Parameter)
 st.sidebar.markdown("## 📂 Navigation")
 
-pages = {
-    "Startseite": "",
-    "📷 QR-Login": "qr",
-    "🚶 Ich gehe bald": "bald",
-    "📚 Gruppenräume": "gruppen",
-    "📋 Buchungsverlauf": "verlauf",
-    "📊 Stoßzeitenanalyse": "statistik"
-}
+current_page = st.sidebar.selectbox("Seite auswählen:", [
+    "Startseite",
+    "📷 QR-Login",
+    "🚶 Ich gehe bald",
+    "📚 Gruppenräume",
+    "📋 Buchungsverlauf",
+    "📊 Stoßzeitenanalyse"
+])
 
-selected = st.sidebar.selectbox("Seite auswählen:", list(pages.keys()))
-st.query_params.update({"page": pages[selected]})
+if current_page == "Startseite":
+    st.title('BibSpotter - Bibliotheksplatzfinder')
+    # Hier kommt alles rein, was auf der Startseite sichtbar sein soll
+    # z.B. Legende, Tischstatus, Reservierungen, Logout-Bereich
 
-query_params = st.query_params
-current_page = query_params.get("page", [""])[0]
+if current_page == "📷 QR-Login":
+    st.header("📷 QR-Code Scanner")
+    # QR-Code Logik hier einfügen
 
-zeige_start = current_page == ""
-zeige_qr = current_page == "qr"
-zeige_geht_bald = current_page == "bald"
-zeige_gruppenraeume = current_page == "gruppen"
-zeige_verlauf = current_page == "verlauf"
-zeige_statistik = current_page == "statistik"
+if current_page == "🚶 Ich gehe bald":
+    st.subheader("🚶 Ich gehe bald")
+    # "Ich gehe bald"-Logik hier einfügen
+
+if current_page == "📚 Gruppenräume":
+    st.header("📚 Gruppenräume")
+    # Gruppenraumreservierung und Kalender
+
+if current_page == "📋 Buchungsverlauf":
+    st.subheader("📋 Deine letzten Aktivitäten")
+    # Persönlicher Verlauf
+
+if current_page == "📊 Stoßzeitenanalyse":
+    st.subheader("📊 Stoßzeiten-Analyse")
+    # Diagramme und Auswertungen
 
 # Titel der App
 st.title('BibSpotter - Bibliotheksplatzfinder')
