@@ -87,20 +87,30 @@ with st.sidebar:
         st.session_state.user_reservierung = None
         st.rerun()
 
-# Sidebar mit erweiterten Funktionen als Navigation
+# Sidebar mit Navigation über Seiten (via URL-Parameter)
 st.sidebar.markdown("## 📂 Navigation")
 
-option = st.sidebar.radio(
-    "Wähle eine Ansicht:",
-    ("Startseite", "📷 QR-Login", "🚶 Ich gehe bald", "📚 Gruppenräume", "📋 Buchungsverlauf", "📊 Stoßzeitenanalyse")
-)
+pages = {
+    "Startseite": "",
+    "📷 QR-Login": "qr",
+    "🚶 Ich gehe bald": "bald",
+    "📚 Gruppenräume": "gruppen",
+    "📋 Buchungsverlauf": "verlauf",
+    "📊 Stoßzeitenanalyse": "statistik"
+}
 
-zeige_start = option == "Startseite"
-zeige_qr = option == "📷 QR-Login"
-zeige_geht_bald = option == "🚶 Ich gehe bald"
-zeige_gruppenraeume = option == "📚 Gruppenräume"
-zeige_verlauf = option == "📋 Buchungsverlauf"
-zeige_statistik = option == "📊 Stoßzeitenanalyse"
+selected = st.sidebar.selectbox("Seite auswählen:", list(pages.keys()))
+st.experimental_set_query_params(page=pages[selected])
+
+query_params = st.experimental_get_query_params()
+current_page = query_params.get("page", [""])[0]
+
+zeige_start = current_page == ""
+zeige_qr = current_page == "qr"
+zeige_geht_bald = current_page == "bald"
+zeige_gruppenraeume = current_page == "gruppen"
+zeige_verlauf = current_page == "verlauf"
+zeige_statistik = current_page == "statistik"
 
 # Titel der App
 st.title('BibSpotter - Bibliotheksplatzfinder')
