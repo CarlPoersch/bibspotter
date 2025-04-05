@@ -301,13 +301,13 @@ if st.session_state.user_reservierung:
 
     if reservierung_aktiv:
         mit_sicherheit = st.checkbox("Ich bin sicher, dass ich die Reservierung stornieren möchte.")
-        if st.button("Reservierung stornieren") and mit_sicherheit:
+        if st.button("Reservierung stornieren", key="storno_button_confirmed") and mit_sicherheit:
             c.execute("INSERT INTO buchungen (tisch, action, zeitstempel, nutzer) VALUES (?, ?, ?, ?)",
                       (tisch, "Storno", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), st.session_state.nutzerkennung))
             conn.commit()
             st.success(f"Reservierung für {tisch} wurde aufgehoben.")
             st.session_state.user_reservierung = None
-        elif st.button("Reservierung stornieren"):
+        elif st.button("Reservierung stornieren", key="storno_button_simple"):
             st.warning("Bitte bestätige die Stornierung über die Checkbox.")
     else:
         st.warning("Deine Reservierung ist bereits abgelaufen oder wurde überschrieben.")
