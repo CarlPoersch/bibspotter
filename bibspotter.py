@@ -91,6 +91,13 @@ with st.sidebar:
 st.title('BibSpotter - Bibliotheksplatzfinder')
 st.markdown('Finde freie Plätze in der Bibliothek und überprüfe die Verfügbarkeit von Gruppenräumen.')
 
+st.markdown("""
+### 🗺️ Tischauswahl-Legende
+- 🟥 **Belegt** – Der Platz ist aktuell besetzt
+- 🟦 **Reserviert** – Eine Reservierung läuft (noch max. 30 Minuten)
+- 🟧 **Geht bald** – Der Platz wird bald frei (angekündigt)
+- 🟩 **Frei** – Sofort verfügbar
+""")
 # Abschnitt für die Platzsuche mit Live-Status
 st.header('📍 Freie Plätze in der Bibliothek')
 
@@ -294,7 +301,7 @@ else:
 
             label = f"{symbol} {tisch_id}\n{beschreibung}"
             if tisch_id in freie_tische:
-                if cols[col].button(label):
+                if cols[col].button(label, help=beschreibung):
                     if ist_gueltige_matrikelnummer(st.session_state.nutzerkennung):
                         zeit = datetime.now()
                         zeitstempel = zeit.strftime("%Y-%m-%d %H:%M:%S")
@@ -307,7 +314,7 @@ else:
                     else:
                         st.warning("Bitte gib deine gültige 7-stellige Matrikelnummer an, bevor du reservierst.")
             else:
-                cols[col].button(label, disabled=True)
+                cols[col].button(label, disabled=True, help=beschreibung)
 
 # Login-/Logout-Bereich
 st.header("🔓 Ausloggen (nur bei vergessenem QR-Scan)")
