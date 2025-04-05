@@ -33,7 +33,7 @@ if not ist_gueltige_matrikelnummer(st.session_state.nutzerkennung):
     eingabe = st.text_input("Bitte gib deine Matrikelnummer ein (7 Ziffern):")
     if ist_gueltige_matrikelnummer(eingabe):
         st.session_state.nutzerkennung = eingabe
-        st.experimental_rerun()
+        st.rerun()
     else:
         st.stop()
 
