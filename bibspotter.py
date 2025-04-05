@@ -199,6 +199,26 @@ else:
             conn.commit()
             st.success(f"{raum} wurde reserviert von {startzeit.strftime('%H:%M')} bis {endzeit.strftime('%H:%M')} – {gruppenraeume[raum]}")
 
+st.subheader("🗓️ Kalenderansicht der Raumreservierungen (heute)")
+
+reservierungen_heute = c.execute("""
+    SELECT tisch, zeitstempel, reserviert_bis, nutzer FROM buchungen 
+    WHERE DATE(zeitstempel) = ? AND action = 'Reservieren' AND tisch LIKE 'Raum %'
+    ORDER BY zeitstempel
+""", (datetime.now().strftime("%Y-%m-%d"),)).fetchall()
+
+if reservierungen_heute:
+    for raum in gruppenraeume:
+        st.markdown(f"### {raum} – {gruppenraeume[raum]}")
+        raum_reservierungen = [r for r in reservierungen_heute if r[0] == raum]
+        if not raum_reservierungen:
+            st.info("Keine Reservierungen für heute.")
+        else:
+            for res in raum_reservierungen:
+                st.write(f"🕒 {res[1][11:16]} – {res[2][11:16]} | Matrikel: {res[3]}")
+else:
+    st.info("Heute sind keine Gruppenräume reserviert.")
+
 # QR-Code Scanner
 from streamlit_qrcode_scanner import qrcode_scanner
 
