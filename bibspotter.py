@@ -158,17 +158,46 @@ else:
 
 # Abschnitt für Gruppenräume
 st.header("📚 Gruppenräume")
-gruppenraeume = [f"Raum {i}" for i in range(1, 3)]
-# Gleiches Prinzip wie bei Tischen
-raeume_rows = c.execute("SELECT tisch, action FROM buchungen WHERE tisch LIKE 'Raum%' ORDER BY zeitstempel").fetchall()
-raum_status = {}
-for raum, action in raeume_rows:
-    raum_status[raum] = action
-belegte_raeume = [r for r, a in raum_status.items() if a == 'Einloggen']
-freie_raeume = [r for r in gruppenraeume if r not in belegte_raeume]
+gruppenraeume = {
+    "Raum 1": "6 Personen, Whiteboard",
+    "Raum 2": "4 Personen, Beamer"
+}
 
-st.markdown(f"**Belegte Gruppenräume:** {', '.join(belegte_raeume) if belegte_raeume else 'Keine'}")
-st.markdown(f"**Freie Gruppenräume:** {', '.join(freie_raeume) if freie_raeume else 'Alle belegt'}")
+st.markdown("Wähle einen Gruppenraum und einen Zeitraum aus, um zu reservieren.")
+
+raum = st.selectbox("Raum auswählen", list(gruppenraeume.keys()))
+startzeit = st.time_input("Beginn der Reservierung", value=datetime.now().time())
+endzeit = st.time_input("Ende der Reservierung", value=(datetime.now() + timedelta(hours=1)).time())
+
+# Prüfe auf Zeitfehler
+if datetime.combine(datetime.today(), endzeit) <= datetime.combine(datetime.today(), startzeit):
+    st.warning("Endzeit muss nach Startzeit liegen.")
+else:
+    # Prüfe ob Raum in der Zeit bereits reserviert ist
+    bestehende = c.execute("""
+        SELECT zeitstempel, reserviert_bis FROM buchungen 
+        WHERE tisch = ? AND action = 'Reservieren'
+    """, (raum,)).fetchall()
+
+    konflikt = False
+    start_dt = datetime.combine(datetime.today(), startzeit)
+    end_dt = datetime.combine(datetime.today(), endzeit)
+
+    for zs, zb in bestehende:
+        res_start = datetime.strptime(zs, "%Y-%m-%d %H:%M:%S")
+        res_ende = datetime.strptime(zb, "%Y-%m-%d %H:%M:%S")
+        if res_start < end_dt and res_ende > start_dt:
+            konflikt = True
+            break
+
+    if konflikt:
+        st.error("Dieser Zeitraum ist bereits belegt.")
+    else:
+        if st.button("Reservieren"):
+            c.execute("INSERT INTO buchungen (tisch, action, zeitstempel, reserviert_bis, nutzer) VALUES (?, ?, ?, ?, ?)",
+                      (raum, "Reservieren", start_dt.strftime("%Y-%m-%d %H:%M:%S"), end_dt.strftime("%Y-%m-%d %H:%M:%S"), st.session_state.nutzerkennung))
+            conn.commit()
+            st.success(f"{raum} wurde reserviert von {startzeit.strftime('%H:%M')} bis {endzeit.strftime('%H:%M')} – {gruppenraeume[raum]}")
 
 # QR-Code Scanner
 from streamlit_qrcode_scanner import qrcode_scanner
