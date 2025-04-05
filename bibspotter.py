@@ -1,9 +1,7 @@
 import streamlit as st
 import random
 import cv2
-from pyzbar.pyzbar import decode
 import numpy as np
-import PIL.Image
 import sqlite3
 from datetime import datetime, timedelta
 
@@ -109,30 +107,26 @@ st.markdown(f"**Belegte Gruppenräume:** {', '.join(belegte_raeume) if belegte_r
 st.markdown(f"**Freie Gruppenräume:** {', '.join(freie_raeume) if freie_raeume else 'Alle belegt'}")
 
 # QR-Code Scanner
-st.header('QR-Code Scanner')
-st.write("Scanne einen QR-Code, um esinen Platz oder Gruppenraum zu reservieren.")
+from streamlit_qrcode_scanner import qrcode_scanner
 
-image = st.camera_input("Starte QR-Scan")
-if image:
-    img = PIL.Image.open(image)
-    decoded_objects = decode(img)
-    if decoded_objects:
-        if ist_gueltige_matrikelnummer(nutzerkennung):
-            for obj in decoded_objects:
-                qr_data = obj.data.decode("utf-8").strip()
-                if qr_data in alle_tische:
-                    st.success(f"{qr_data} erkannt – du wirst jetzt eingeloggt.")
-                    zeit = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    c.execute("INSERT INTO buchungen (tisch, action, zeitstempel, nutzer) VALUES (?, ?, ?, ?)", 
-                              (qr_data, "Einloggen", zeit, nutzerkennung))
-                    conn.commit()
-                    st.balloons()
-                else:
-                    st.error("QR-Code ist ungültig oder gehört zu keinem Tisch.")
+st.header('📷 QR-Code Scanner')
+st.write("Scanne einen QR-Code, um einen Platz oder Gruppenraum zu reservieren.")
+
+qr_result = qrcode_scanner()
+if qr_result:
+    if ist_gueltige_matrikelnummer(nutzerkennung):
+        qr_data = qr_result.strip()
+        if qr_data in alle_tische:
+            st.success(f"{qr_data} erkannt – du wirst jetzt eingeloggt.")
+            zeit = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            c.execute("INSERT INTO buchungen (tisch, action, zeitstempel, nutzer) VALUES (?, ?, ?, ?)", 
+                      (qr_data, "Einloggen", zeit, nutzerkennung))
+            conn.commit()
+            st.balloons()
         else:
-            st.warning("Bitte gib deine gültige 7-stellige Matrikelnummer an, bevor du fortfährst.")
+            st.error("QR-Code ist ungültig oder gehört zu keinem Tisch.")
     else:
-        st.error("Kein QR-Code erkannt. Bitte versuche es erneut.")
+        st.warning("Bitte gib deine gültige 7-stellige Matrikelnummer an, bevor du fortfährst.")
 
 # Hinweis freiwillig: Bald frei
 eingeloggte_tische = [tisch for tisch, (action, _) in status.items() if action == 'Einloggen']
