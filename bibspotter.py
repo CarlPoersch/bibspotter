@@ -360,6 +360,37 @@ meine_buchungen = c.execute("SELECT * FROM buchungen WHERE nutzer = ? ORDER BY z
 for eintrag in meine_buchungen:
     st.write(f"{eintrag[3]} – {eintrag[1]} – {eintrag[2]} – {eintrag[4]}")
 
+st.subheader("📊 Stoßzeiten-Analyse")
+
+# Lade alle Einlog-Zeiten
+zeitdaten = c.execute("""
+    SELECT zeitstempel FROM buchungen 
+    WHERE action = 'Einloggen'
+""").fetchall()
+
+# Stundenauswertung
+stunden = [datetime.strptime(z[0], "%Y-%m-%d %H:%M:%S").hour for z in zeitdaten]
+verteilung = {stunde: 0 for stunde in range(24)}
+for s in stunden:
+    verteilung[s] += 1
+
+st.markdown("**📈 Nutzung nach Stunden**")
+st.bar_chart(data=list(verteilung.values()), use_container_width=True)
+st.caption("Anzahl der Einlog-Vorgänge pro Stunde (aggregiert)")
+
+# Wochentagsauswertung
+import calendar
+from collections import Counter
+
+wochentagsdaten = [datetime.strptime(z[0], "%Y-%m-%d %H:%M:%S").weekday() for z in zeitdaten]
+wochentag_counter = Counter(wochentagsdaten)
+tage = [calendar.day_name[i] for i in range(7)]
+werte = [wochentag_counter.get(i, 0) for i in range(7)]
+
+st.markdown("**📆 Nutzung nach Wochentagen**")
+st.bar_chart(data=werte, use_container_width=True)
+st.caption("Anzahl der Einlog-Vorgänge pro Wochentag (Montag–Sonntag)")
+
 # Footer
 st.markdown('---')
 st.markdown('© 2025 BibSpotter - Alle Rechte vorbehalten.')
