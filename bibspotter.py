@@ -87,13 +87,20 @@ with st.sidebar:
         st.session_state.user_reservierung = None
         st.rerun()
 
-# Sidebar-Erweiterungen
-st.sidebar.markdown("### 📂 Erweiterte Funktionen")
-zeige_qr = st.sidebar.checkbox("📷 QR-Login")
-zeige_geht_bald = st.sidebar.checkbox("🚶 Ich gehe bald")
-zeige_gruppenraeume = st.sidebar.checkbox("📚 Gruppenräume")
-zeige_verlauf = st.sidebar.checkbox("📋 Buchungsverlauf")
-zeige_statistik = st.sidebar.checkbox("📊 Stoßzeitenanalyse")
+# Sidebar mit erweiterten Funktionen als Navigation
+st.sidebar.markdown("## 📂 Navigation")
+
+option = st.sidebar.radio(
+    "Wähle eine Ansicht:",
+    ("Startseite", "📷 QR-Login", "🚶 Ich gehe bald", "📚 Gruppenräume", "📋 Buchungsverlauf", "📊 Stoßzeitenanalyse")
+)
+
+zeige_start = option == "Startseite"
+zeige_qr = option == "📷 QR-Login"
+zeige_geht_bald = option == "🚶 Ich gehe bald"
+zeige_gruppenraeume = option == "📚 Gruppenräume"
+zeige_verlauf = option == "📋 Buchungsverlauf"
+zeige_statistik = option == "📊 Stoßzeitenanalyse"
 
 # Titel der App
 st.title('BibSpotter - Bibliotheksplatzfinder')
