@@ -1,0 +1,5 @@
+streamlit
+pyzbar
+opencv-python-headless
+Pillow
+qrcode
