@@ -24,6 +24,8 @@ conn.commit()
 
 if 'nutzerkennung' not in st.session_state:
     st.session_state.nutzerkennung = ''
+if 'user_reservierung' not in st.session_state:
+    st.session_state.user_reservierung = None
 
 def ist_gueltige_matrikelnummer(eingabe):
     return eingabe.isdigit() and len(eingabe) == 7
@@ -33,16 +35,57 @@ if not ist_gueltige_matrikelnummer(st.session_state.nutzerkennung):
     eingabe = st.text_input("Bitte gib deine Matrikelnummer ein (7 Ziffern):")
     if ist_gueltige_matrikelnummer(eingabe):
         st.session_state.nutzerkennung = eingabe
+        # Lade aktuelle Aktion beim Login
+        if st.session_state.user_reservierung is None:
+            letzte = c.execute("SELECT tisch, action FROM buchungen WHERE nutzer = ? ORDER BY zeitstempel DESC", 
+                               (st.session_state.nutzerkennung,)).fetchone()
+            if letzte:
+                if letzte[1] == "Reservieren":
+                    st.session_state.user_reservierung = letzte[0]
+                elif letzte[1] == "Einloggen":
+                    st.session_state.user_reservierung = letzte[0]  # Zeigt auch Login-Tisch an
         st.rerun()
     else:
         st.stop()
+
+# Aktuelle Sitzung anzeigen (wenn vorhanden)
+letzte_aktion = c.execute("SELECT tisch, action, zeitstempel FROM buchungen WHERE nutzer = ? ORDER BY zeitstempel DESC", 
+                          (st.session_state.nutzerkennung,)).fetchone()
+if letzte_aktion and letzte_aktion[1] == "Einloggen":
+    st.success(f"🪑 Du bist eingeloggt an: {letzte_aktion[0]} (seit {letzte_aktion[2]})")
+
+# Session-Zeitübersicht (heutiger Tag)
+heute = datetime.now().strftime("%Y-%m-%d")
+buchungen_heute = c.execute("""
+    SELECT action, zeitstempel FROM buchungen 
+    WHERE nutzer = ? AND DATE(zeitstempel) = ? ORDER BY zeitstempel
+""", (st.session_state.nutzerkennung, heute)).fetchall()
+
+gesamt_minuten = 0
+login_zeit = None
+
+for action, zeit in buchungen_heute:
+    zeitpunkt = datetime.strptime(zeit, "%Y-%m-%d %H:%M:%S")
+    if action == "Einloggen":
+        login_zeit = zeitpunkt
+    elif action in ("Ausloggen", "Geht bald") and login_zeit:
+        gesamt_minuten += int((zeitpunkt - login_zeit).total_seconds() // 60)
+        login_zeit = None
+
+# Falls eingeloggt aber noch kein Ausloggen erfolgt ist, Dauer bis jetzt rechnen
+if login_zeit:
+    gesamt_minuten += int((datetime.now() - login_zeit).total_seconds() // 60)
+
+if gesamt_minuten > 0:
+    st.info(f"📊 Du warst heute insgesamt ca. {gesamt_minuten} Minute(n) aktiv in der Bibliothek.")
 
 # Logout oben rechts
 with st.sidebar:
     st.markdown(f"👤 Eingeloggt als: `{st.session_state.nutzerkennung}`")
     if st.button("🚪 Logout"):
         st.session_state.nutzerkennung = ''
-        st.experimental_rerun()
+        st.session_state.user_reservierung = None
+        st.rerun()
 
 # Titel der App
 st.title('BibSpotter - Bibliotheksplatzfinder')
@@ -168,9 +211,6 @@ else:
 
 st.subheader("✍️ Tisch reservieren")
 
-if 'user_reservierung' not in st.session_state:
-    st.session_state.user_reservierung = None
-
 if st.session_state.user_reservierung:
     if st.button("Reservierung stornieren"):
         c.execute("INSERT INTO buchungen (tisch, action, zeitstempel, nutzer) VALUES (?, ?, ?, ?)",
@@ -236,10 +276,11 @@ if tisch:
         st.success(f"Tisch {tisch} wurde ausgeloggt um {zeit}")
 st.caption("Reservierungen verfallen nach 30 Minuten automatisch, wenn kein QR-Login erfolgt.")
 
-# Letzte Aktionen anzeigen
-st.subheader("📋 Buchungsverlauf")
-buchungen = c.execute("SELECT * FROM buchungen ORDER BY zeitstempel DESC LIMIT 10").fetchall()
-for eintrag in buchungen:
+# Persönlicher Buchungsverlauf
+st.subheader("📋 Deine letzten Aktivitäten")
+meine_buchungen = c.execute("SELECT * FROM buchungen WHERE nutzer = ? ORDER BY zeitstempel DESC LIMIT 10", 
+                            (st.session_state.nutzerkennung,)).fetchall()
+for eintrag in meine_buchungen:
     st.write(f"{eintrag[3]} – {eintrag[1]} – {eintrag[2]} – {eintrag[4]}")
 
 # Footer
