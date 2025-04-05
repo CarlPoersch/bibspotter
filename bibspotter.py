@@ -100,9 +100,9 @@ pages = {
 }
 
 selected = st.sidebar.selectbox("Seite auswählen:", list(pages.keys()))
-st.experimental_set_query_params(page=pages[selected])
+st.query_params.update({"page": pages[selected]})
 
-query_params = st.experimental_get_query_params()
+query_params = st.query_params
 current_page = query_params.get("page", [""])[0]
 
 zeige_start = current_page == ""
