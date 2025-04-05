@@ -5,18 +5,44 @@ import numpy as np
 import sqlite3
 from datetime import datetime, timedelta
 
-# Datenbank-Initialisierung
-conn = sqlite3.connect('buchungen.db')
+# Verbindung zur SQLite-Datenbank
+conn = sqlite3.connect("buchungen.db", check_same_thread=False)
 c = conn.cursor()
-c.execute('''CREATE TABLE IF NOT EXISTS buchungen (id INTEGER PRIMARY KEY, tisch TEXT, action TEXT, zeitstempel TEXT, reserviert_bis TEXT)''')
-try:
-    c.execute("ALTER TABLE buchungen ADD COLUMN reserviert_bis TEXT")
-except sqlite3.OperationalError:
-    pass  # Spalte existiert bereits
-try:
-    c.execute("ALTER TABLE buchungen ADD COLUMN nutzer TEXT")
-except sqlite3.OperationalError:
-    pass  # Spalte existiert bereits
+
+# Erstelle Tabelle, falls sie noch nicht existiert
+c.execute('''
+    CREATE TABLE IF NOT EXISTS buchungen (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tisch TEXT,
+        action TEXT,
+        zeitstempel TEXT,
+        reserviert_bis TEXT,
+        nutzer TEXT
+    )
+''')
+conn.commit()
+
+if 'nutzerkennung' not in st.session_state:
+    st.session_state.nutzerkennung = ''
+
+def ist_gueltige_matrikelnummer(eingabe):
+    return eingabe.isdigit() and len(eingabe) == 7
+
+if not ist_gueltige_matrikelnummer(st.session_state.nutzerkennung):
+    st.title("🔐 Login")
+    eingabe = st.text_input("Bitte gib deine Matrikelnummer ein (7 Ziffern):")
+    if ist_gueltige_matrikelnummer(eingabe):
+        st.session_state.nutzerkennung = eingabe
+        st.experimental_rerun()
+    else:
+        st.stop()
+
+# Logout oben rechts
+with st.sidebar:
+    st.markdown(f"👤 Eingeloggt als: `{st.session_state.nutzerkennung}`")
+    if st.button("🚪 Logout"):
+        st.session_state.nutzerkennung = ''
+        st.experimental_rerun()
 
 # Titel der App
 st.title('BibSpotter - Bibliotheksplatzfinder')
@@ -37,11 +63,6 @@ for tisch, action, zeit in rows:
 
 belegte_tische = []
 now = datetime.now()
-
-nutzerkennung = st.text_input("Deine Matrikelnummer (7 Ziffern)")
-
-def ist_gueltige_matrikelnummer(eingabe):
-    return eingabe.isdigit() and len(eingabe) == 7
 
 for tisch, (action, zeitpunkt) in status.items():
     if action == 'Einloggen':
@@ -114,13 +135,13 @@ st.write("Scanne einen QR-Code, um einen Platz oder Gruppenraum zu reservieren."
 
 qr_result = qrcode_scanner()
 if qr_result:
-    if ist_gueltige_matrikelnummer(nutzerkennung):
+    if ist_gueltige_matrikelnummer(st.session_state.nutzerkennung):
         qr_data = qr_result.strip()
         if qr_data in alle_tische:
             st.success(f"{qr_data} erkannt – du wirst jetzt eingeloggt.")
             zeit = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             c.execute("INSERT INTO buchungen (tisch, action, zeitstempel, nutzer) VALUES (?, ?, ?, ?)", 
-                      (qr_data, "Einloggen", zeit, nutzerkennung))
+                      (qr_data, "Einloggen", zeit, st.session_state.nutzerkennung))
             conn.commit()
             st.balloons()
         else:
@@ -153,7 +174,7 @@ if 'user_reservierung' not in st.session_state:
 if st.session_state.user_reservierung:
     if st.button("Reservierung stornieren"):
         c.execute("INSERT INTO buchungen (tisch, action, zeitstempel, nutzer) VALUES (?, ?, ?, ?)",
-                  (st.session_state.user_reservierung, "Storno", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), nutzerkennung))
+                  (st.session_state.user_reservierung, "Storno", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), st.session_state.nutzerkennung))
         conn.commit()
         st.success(f"Reservierung für {st.session_state.user_reservierung} wurde aufgehoben.")
         st.session_state.user_reservierung = None
@@ -185,12 +206,12 @@ else:
             label = f"{symbol} {tisch_id}\n{beschreibung}"
             if tisch_id in freie_tische:
                 if cols[col].button(label):
-                    if ist_gueltige_matrikelnummer(nutzerkennung):
+                    if ist_gueltige_matrikelnummer(st.session_state.nutzerkennung):
                         zeit = datetime.now()
                         zeitstempel = zeit.strftime("%Y-%m-%d %H:%M:%S")
                         reserviert_bis = (zeit + timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
                         c.execute("INSERT INTO buchungen (tisch, action, zeitstempel, reserviert_bis, nutzer) VALUES (?, ?, ?, ?, ?)",
-                                  (tisch_id, "Reservieren", zeitstempel, reserviert_bis, nutzerkennung))
+                                  (tisch_id, "Reservieren", zeitstempel, reserviert_bis, st.session_state.nutzerkennung))
                         conn.commit()
                         st.session_state.user_reservierung = tisch_id
                         st.success(f"{tisch_id} wurde für dich reserviert.")
