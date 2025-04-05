@@ -268,15 +268,36 @@ else:
 st.subheader("✍️ Tisch reservieren")
 
 if st.session_state.user_reservierung:
-    if st.button("Reservierung stornieren"):
-        c.execute("INSERT INTO buchungen (tisch, action, zeitstempel, nutzer) VALUES (?, ?, ?, ?)",
-                  (st.session_state.user_reservierung, "Storno", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), st.session_state.nutzerkennung))
-        conn.commit()
-        st.success(f"Reservierung für {st.session_state.user_reservierung} wurde aufgehoben.")
+    st.info(f"Du hast aktuell {st.session_state.user_reservierung} reserviert.")
+
+    # Prüfe ob Reservierung noch aktiv ist
+    tisch = st.session_state.user_reservierung
+    letzte_res = c.execute("""
+        SELECT zeitstempel FROM buchungen 
+        WHERE tisch = ? AND nutzer = ? AND action = 'Reservieren'
+        ORDER BY zeitstempel DESC LIMIT 1
+    """, (tisch, st.session_state.nutzerkennung)).fetchone()
+
+    reservierung_aktiv = False
+    if letzte_res:
+        zeitpunkt = datetime.strptime(letzte_res[0], "%Y-%m-%d %H:%M:%S")
+        if datetime.now() - zeitpunkt < timedelta(minutes=30):
+            reservierung_aktiv = True
+
+    if reservierung_aktiv:
+        mit_sicherheit = st.checkbox("Ich bin sicher, dass ich die Reservierung stornieren möchte.")
+        if st.button("Reservierung stornieren") and mit_sicherheit:
+            c.execute("INSERT INTO buchungen (tisch, action, zeitstempel, nutzer) VALUES (?, ?, ?, ?)",
+                      (tisch, "Storno", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), st.session_state.nutzerkennung))
+            conn.commit()
+            st.success(f"Reservierung für {tisch} wurde aufgehoben.")
+            st.session_state.user_reservierung = None
+        elif st.button("Reservierung stornieren"):
+            st.warning("Bitte bestätige die Stornierung über die Checkbox.")
+    else:
+        st.warning("Deine Reservierung ist bereits abgelaufen oder wurde überschrieben.")
         st.session_state.user_reservierung = None
 
-if st.session_state.user_reservierung:
-    st.info(f"Du hast bereits {st.session_state.user_reservierung} reserviert.")
 else:
     for row in range(3):
         cols = st.columns(3)
