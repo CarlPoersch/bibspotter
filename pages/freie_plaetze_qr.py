@@ -8,6 +8,24 @@ from io import BytesIO
 conn = sqlite3.connect("data/buchungen.db", check_same_thread=False)
 c = conn.cursor()
 
+# Tabelle 'arbeitsplaetze' anlegen, falls sie nicht existiert
+c.execute("""
+CREATE TABLE IF NOT EXISTS arbeitsplaetze (
+    tisch_nr INTEGER PRIMARY KEY,
+    status TEXT
+)
+""")
+conn.commit()
+
+# Testdaten nur einfügen, wenn Tabelle leer ist
+c.execute("SELECT COUNT(*) FROM arbeitsplaetze")
+if c.fetchone()[0] == 0:
+    c.executemany(
+        "INSERT INTO arbeitsplaetze (tisch_nr, status) VALUES (?, ?)",
+        [(1, 'frei'), (2, 'belegt'), (3, 'frei')]
+    )
+    conn.commit()
+
 st.title("📷 QR-Login & Freie Plätze")
 
 # DEBUG: Zeige vorhandene Tabellen
