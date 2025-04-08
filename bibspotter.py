@@ -26,15 +26,25 @@ if not ist_gueltige_matrikelnummer(st.session_state.nutzerkennung):
     else:
         st.stop()
 
-# Sidebar: Logout & Navigation
 with st.sidebar:
     st.markdown(f"👤 Eingeloggt als: `{st.session_state.nutzerkennung}`")
     if st.button("🚪 Logout"):
         st.session_state.nutzerkennung = ''
         st.session_state.user_reservierung = None
         st.rerun()
+
     st.markdown("---")
-    st.markdown("📂 Seiten findest du links im Menü")
+    st.markdown("### 🧭 Navigation")
+    st.page_link("pages/1_Freie_Plaetze_QR.py", label="🔎 Freie Plätze & QR-Login")
+    st.page_link("pages/2_Ich_Gehe_Bald.py", label="🚶 Ich gehe bald")
+
+    st.markdown("---")
+    st.markdown("### 📊 Auswertung")
+    st.page_link("pages/4_Buchungsverlauf.py", label="📋 Buchungsverlauf")
+    st.page_link("pages/5_Stosszeitenanalyse.py", label="📊 Stoßzeitenanalyse")
+
+    st.markdown("---")
+    st.markdown("ℹ️ Seiten findest du links im Menü")
 
 # Optional: Intro auf der Startseite
 st.title("📚 BibSpotter – Bibliotheksplatzfinder")
