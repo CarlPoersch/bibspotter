@@ -10,6 +10,11 @@ c = conn.cursor()
 
 st.title("📷 QR-Login & Freie Plätze")
 
+# DEBUG: Zeige vorhandene Tabellen
+c.execute("SELECT name FROM sqlite_master WHERE type='table';")
+tabellen = [t[0] for t in c.fetchall()]
+st.write("📋 Tabellen in der Datenbank:", tabellen)
+
 # QR-Code für Login generieren
 if 'nutzerkennung' in st.session_state and st.session_state.nutzerkennung:
     qr = qrcode.make(st.session_state.nutzerkennung)
